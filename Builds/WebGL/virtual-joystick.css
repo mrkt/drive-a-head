@@ -1,0 +1,55 @@
+/* 虚拟摇杆样式 */
+#virtual-joystick {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 150px;
+  height: 150px;
+  z-index: 1000;
+}
+
+#joystick-base {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.5);
+}
+
+#joystick-stick {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  left: 45px;
+  top: 45px;
+  transition: all 0.1s;
+}
+
+/* 8方向指示器 */
+.direction-indicator {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.dir-up { top: 5px; left: 60px; }
+.dir-down { bottom: 5px; left: 60px; }
+.dir-left { left: 5px; top: 60px; }
+.dir-right { right: 5px; top: 60px; }
+.dir-up-left { top: 15px; left: 15px; }
+.dir-up-right { top: 15px; right: 15px; }
+.dir-down-left { bottom: 15px; left: 15px; }
+.dir-down-right { bottom: 15px; right: 15px; }
+
+.direction-indicator.active {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.9);
+}
