@@ -1,4 +1,4 @@
-// 虚拟摇杆控制 - 模拟摇杆版本
+// 虚拟摇杆控制 - 真正的圆形摇杆
 (function() {
   var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   if (!isMobile) return;
@@ -10,6 +10,16 @@
       setTimeout(initJoystick, 100);
       return;
     }
+
+    // 创建摇杆 HTML 结构
+    var joystickHTML = `
+      <div id="virtual-joystick">
+        <div id="joystick-base"></div>
+        <div id="joystick-stick"></div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', joystickHTML);
 
     var joystick = document.getElementById('virtual-joystick');
     var joystickStick = document.getElementById('joystick-stick');
@@ -23,8 +33,8 @@
     joystick.style.display = 'block';
 
     var currentInput = {
-      horizontal: 0,  // -1.0 到 1.0 的连续值
-      vertical: 0     // -1.0 到 1.0 的连续值
+      horizontal: 0,  // -1.0 到 1.0
+      vertical: 0     // -1.0 到 1.0
     };
 
     var keyStates = {
@@ -38,7 +48,9 @@
       'd': false
     };
 
-    var updateInterval = null;
+    var isDragging = false;
+    var centerX = 0;
+    var centerY = 0;
 
     function simulateKeyEvent(key, isDown) {
       var event = new KeyboardEvent(isDown ? 'keydown' : 'keyup', {
@@ -60,7 +72,7 @@
     }
 
     function updateKeys() {
-      var threshold = 0.3; // 阈值，小于这个值不触发按键
+      var threshold = 0.3; // 触发阈值
 
       // 垂直方向
       var shouldPressUp = currentInput.vertical > threshold;
@@ -119,55 +131,18 @@
         keyStates['ArrowRight'] = false;
         keyStates['d'] = false;
       }
-
-      // 更新方向指示器
-      updateDirectionIndicators();
     }
 
-    function updateDirectionIndicators() {
-      var indicators = document.querySelectorAll('.direction-indicator');
-      indicators.forEach(function(ind) { ind.classList.remove('active'); });
-
-      var threshold = 0.3;
-      var h = currentInput.horizontal;
-      var v = currentInput.vertical;
-
-      if (Math.abs(h) < threshold && Math.abs(v) < threshold) {
-        return; // 死区，不显示任何方向
-      }
-
-      // 计算角度来确定最接近的方向
-      var angle = Math.atan2(-v, h) * 180 / Math.PI;
-
-      if (angle >= -22.5 && angle < 22.5) {
-        document.querySelector('.dir-right').classList.add('active');
-      } else if (angle >= 22.5 && angle < 67.5) {
-        document.querySelector('.dir-up-right').classList.add('active');
-      } else if (angle >= 67.5 && angle < 112.5) {
-        document.querySelector('.dir-up').classList.add('active');
-      } else if (angle >= 112.5 && angle < 157.5) {
-        document.querySelector('.dir-up-left').classList.add('active');
-      } else if (angle >= 157.5 || angle < -157.5) {
-        document.querySelector('.dir-left').classList.add('active');
-      } else if (angle >= -157.5 && angle < -112.5) {
-        document.querySelector('.dir-down-left').classList.add('active');
-      } else if (angle >= -112.5 && angle < -67.5) {
-        document.querySelector('.dir-down').classList.add('active');
-      } else if (angle >= -67.5 && angle < -22.5) {
-        document.querySelector('.dir-down-right').classList.add('active');
-      }
-    }
-
-    function handleJoystickMove(touch) {
+    function handleJoystickMove(clientX, clientY) {
       var rect = joystickBase.getBoundingClientRect();
-      var centerX = rect.left + rect.width / 2;
-      var centerY = rect.top + rect.height / 2;
+      centerX = rect.left + rect.width / 2;
+      centerY = rect.top + rect.height / 2;
 
-      var deltaX = touch.clientX - centerX;
-      var deltaY = touch.clientY - centerY;
+      var deltaX = clientX - centerX;
+      var deltaY = clientY - centerY;
 
       var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      var maxDistance = 60; // 增加最大距离，让摇杆更灵敏
+      var maxDistance = 40; // 摇杆最大移动距离
 
       // 限制摇杆移动范围
       if (distance > maxDistance) {
@@ -177,11 +152,11 @@
       }
 
       // 更新摇杆视觉位置
-      joystickStick.style.left = (45 + deltaX) + 'px';
-      joystickStick.style.top = (45 + deltaY) + 'px';
+      joystickStick.style.left = (40 + deltaX) + 'px';
+      joystickStick.style.top = (40 + deltaY) + 'px';
 
       // 计算归一化的输入值 (-1.0 到 1.0)
-      var deadZone = 10; // 死区半径
+      var deadZone = 8; // 死区半径
       if (distance < deadZone) {
         currentInput.horizontal = 0;
         currentInput.vertical = 0;
@@ -198,34 +173,74 @@
     }
 
     function resetJoystick() {
-      joystickStick.style.left = '45px';
-      joystickStick.style.top = '45px';
+      isDragging = false;
+      joystickStick.style.left = '40px';
+      joystickStick.style.top = '40px';
       currentInput.horizontal = 0;
       currentInput.vertical = 0;
       updateKeys();
     }
 
+    // 触摸事件
     joystickBase.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      handleJoystickMove(e.touches[0]);
+      isDragging = true;
+      var touch = e.touches[0];
+      handleJoystickMove(touch.clientX, touch.clientY);
     });
 
-    joystickBase.addEventListener('touchmove', function(e) {
+    joystickStick.addEventListener('touchstart', function(e) {
       e.preventDefault();
-      handleJoystickMove(e.touches[0]);
+      isDragging = true;
+      var touch = e.touches[0];
+      handleJoystickMove(touch.clientX, touch.clientY);
     });
 
-    joystickBase.addEventListener('touchend', function(e) {
+    document.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      var touch = e.touches[0];
+      handleJoystickMove(touch.clientX, touch.clientY);
+    });
+
+    document.addEventListener('touchend', function(e) {
+      if (!isDragging) return;
       e.preventDefault();
       resetJoystick();
     });
 
-    joystickBase.addEventListener('touchcancel', function(e) {
+    document.addEventListener('touchcancel', function(e) {
+      if (!isDragging) return;
       e.preventDefault();
       resetJoystick();
     });
 
-    console.log('Virtual joystick (analog mode) initialized for mobile');
+    // 鼠标事件（用于桌面测试）
+    joystickBase.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      isDragging = true;
+      handleJoystickMove(e.clientX, e.clientY);
+    });
+
+    joystickStick.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      isDragging = true;
+      handleJoystickMove(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      handleJoystickMove(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mouseup', function(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      resetJoystick();
+    });
+
+    console.log('Virtual joystick initialized for mobile');
   }
 
   // DOM 加载完成后初始化
