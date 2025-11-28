@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>虚拟摇杆测试页面</title>
+    <link rel="stylesheet" href="virtual-joystick.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .device-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .device-info div {
+            margin: 5px 0;
+        }
+
+        .input-display {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .input-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 5px 0;
+        }
+
+        #unity-canvas {
+            width: 100%;
+            height: 300px;
+            background: #333;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .console-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .console-log div {
+            margin: 3px 0;
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .log-info { color: #4ec9b0; }
+        .log-error { color: #f48771; }
+        .log-success { color: #b5cea8; }
+    </style>
+</head>
+<body>
+    <div class="info-panel">
+        <h1>🎮 虚拟摇杆测试页面</h1>
+
+        <div id="status" class="status info">
+            正在初始化...
+        </div>
+
+        <div class="device-info">
+            <div><strong>设备信息：</strong></div>
+            <div id="user-agent"></div>
+            <div id="is-mobile"></div>
+            <div id="has-touch"></div>
+            <div id="screen-size"></div>
+        </div>
+
+        <div class="input-display">
+            <div><strong>摇杆输入：</strong></div>
+            <div class="input-value">水平: <span id="horizontal">0.00</span></div>
+            <div class="input-value">垂直: <span id="vertical">0.00</span></div>
+            <div class="input-value">按键: <span id="keys">无</span></div>
+        </div>
+
+        <div class="console-log" id="console-log">
+            <div class="log-info">控制台日志将显示在这里...</div>
+        </div>
+    </div>
+
+    <!-- 模拟 Unity Canvas -->
+    <div id="unity-canvas">
+        模拟 Unity Canvas<br>
+        (虚拟摇杆应该显示在左下角)
+    </div>
+
+    <script>
+        // 拦截 console.log 并显示在页面上
+        var consoleLog = document.getElementById('console-log');
+        var originalLog = console.log;
+        var originalError = console.error;
+
+        function addLog(message, type) {
+            var div = document.createElement('div');
+            div.className = 'log-' + type;
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            consoleLog.appendChild(div);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        console.log = function() {
+            originalLog.apply(console, arguments);
+            addLog(Array.from(arguments).join(' '), 'info');
+        };
+
+        console.error = function() {
+            originalError.apply(console, arguments);
+            addLog(Array.from(arguments).join(' '), 'error');
+        };
+
+        // 显示设备信息
+        document.getElementById('user-agent').textContent = 'User Agent: ' + navigator.userAgent;
+        document.getElementById('is-mobile').textContent = 'Is Mobile: ' + /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        document.getElementById('has-touch').textContent = 'Has Touch: ' + ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        document.getElementById('screen-size').textContent = 'Screen: ' + window.innerWidth + 'x' + window.innerHeight;
+
+        // 监听键盘事件
+        var activeKeys = new Set();
+
+        document.addEventListener('keydown', function(e) {
+            activeKeys.add(e.key);
+            updateKeysDisplay();
+        });
+
+        document.addEventListener('keyup', function(e) {
+            activeKeys.delete(e.key);
+            updateKeysDisplay();
+        });
+
+        function updateKeysDisplay() {
+            var keysElement = document.getElementById('keys');
+            if (activeKeys.size === 0) {
+                keysElement.textContent = '无';
+            } else {
+                keysElement.textContent = Array.from(activeKeys).join(', ');
+            }
+        }
+
+        // 检查虚拟摇杆是否初始化
+        setTimeout(function() {
+            var joystick = document.getElementById('virtual-joystick');
+            var statusElement = document.getElementById('status');
+
+            if (joystick) {
+                var style = window.getComputedStyle(joystick);
+                if (style.display === 'block') {
+                    statusElement.className = 'status success';
+                    statusElement.textContent = '✅ 虚拟摇杆已成功初始化并显示！';
+                    addLog('虚拟摇杆初始化成功', 'success');
+                } else {
+                    statusElement.className = 'status error';
+                    statusElement.textContent = '⚠️ 虚拟摇杆已创建但未显示 (display: ' + style.display + ')';
+                    addLog('虚拟摇杆未显示: display=' + style.display, 'error');
+                }
+            } else {
+                statusElement.className = 'status error';
+                statusElement.textContent = '❌ 虚拟摇杆未创建（可能不是移动设备）';
+                addLog('虚拟摇杆未创建', 'error');
+            }
+        }, 2000);
+
+        // 模拟输入值更新（实际会由虚拟摇杆更新）
+        setInterval(function() {
+            // 这里只是为了演示，实际值会由虚拟摇杆的键盘事件触发
+            // 你可以在虚拟摇杆脚本中添加回调来更新这些值
+        }, 100);
+    </script>
+
+    <!-- 加载虚拟摇杆脚本 -->
+    <script src="virtual-joystick.js"></script>
+</body>
+</html>
