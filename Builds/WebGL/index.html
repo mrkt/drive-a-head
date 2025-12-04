@@ -8,92 +8,11 @@
     <link rel="stylesheet" href="TemplateData/style.css">
       <!-- 虚拟摇杆样式 -->
     <link rel="stylesheet" href="virtual-joystick.css">
-    <!-- 自定义加载画面样式 -->
-    <style>
-      #custom-loading-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: url('open.png');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: center;
-        z-index: 9999;
-        transition: opacity 0.5s ease-out;
-      }
-
-      #custom-loading-screen.fade-out {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      #custom-progress-container {
-        width: 80%;
-        max-width: 600px;
-        margin-bottom: 80px;
-        padding: 0 20px;
-      }
-
-      #custom-progress-bar-bg {
-        width: 100%;
-        height: 30px;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 15px;
-        overflow: hidden;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      }
-
-      #custom-progress-bar {
-        width: 0%;
-        height: 100%;
-        background: linear-gradient(90deg, #4CAF50, #8BC34A);
-        border-radius: 15px;
-        transition: width 0.3s ease;
-        box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-      }
-
-      #custom-progress-text {
-        text-align: center;
-        color: white;
-        font-size: 18px;
-        font-weight: bold;
-        margin-top: 15px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        font-family: Arial, sans-serif;
-      }
-
-      #custom-loading-tip {
-        text-align: center;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 14px;
-        margin-top: 10px;
-        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-        font-family: Arial, sans-serif;
-      }
-    </style>
   </head>
   <body>
-    <!-- 自定义加载画面 -->
-    <div id="custom-loading-screen">
-      <div id="custom-progress-container">
-        <div id="custom-progress-bar-bg">
-          <div id="custom-progress-bar"></div>
-        </div>
-        <div id="custom-progress-text">加载中... 0%</div>
-        <div id="custom-loading-tip">正在加载游戏资源，请稍候...</div>
-      </div>
-    </div>
-
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar" style="display: none;">
+      <div id="unity-loading-bar">
         <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
           <div id="unity-progress-bar-full"></div>
@@ -114,23 +33,6 @@
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
-
-      // 自定义加载画面元素
-      var customLoadingScreen = document.querySelector("#custom-loading-screen");
-      var customProgressBar = document.querySelector("#custom-progress-bar");
-      var customProgressText = document.querySelector("#custom-progress-text");
-      var customLoadingTip = document.querySelector("#custom-loading-tip");
-
-      // 加载提示文本数组
-      var loadingTips = [
-        "正在加载游戏资源，请稍候...",
-        "准备车辆模型...",
-        "加载游戏场景...",
-        "初始化物理引擎...",
-        "连接游戏服务器...",
-        "即将完成，马上就好..."
-      ];
-      var currentTipIndex = 0;
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -209,51 +111,17 @@
 
       loadingBar.style.display = "block";
 
-      // 定期更新加载提示文本
-      var tipInterval = setInterval(function() {
-        currentTipIndex = (currentTipIndex + 1) % loadingTips.length;
-        customLoadingTip.textContent = loadingTips[currentTipIndex];
-      }, 2000);
-
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
-          // 更新自定义进度条
-          var percentage = Math.round(progress * 100);
-          customProgressBar.style.width = percentage + "%";
-          customProgressText.textContent = "加载中... " + percentage + "%";
-
-          // 同时更新原始进度条（保持兼容性）
-          progressBarFull.style.width = percentage + "%";
+          progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
-                // 清除提示文本定时器
-                clearInterval(tipInterval);
-
-                // 显示加载完成
-                customProgressText.textContent = "加载完成！";
-                customLoadingTip.textContent = "正在启动游戏...";
-
-                // 延迟0.5秒后淡出加载画面
-                setTimeout(function() {
-                  customLoadingScreen.classList.add('fade-out');
-
-                  // 1秒后完全移除加载画面
-                  setTimeout(function() {
-                    customLoadingScreen.style.display = 'none';
-                  }, 500);
-                }, 500);
-
                 loadingBar.style.display = "none";
                 fullscreenButton.onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };
               }).catch((message) => {
-                // 加载失败时清除定时器
-                clearInterval(tipInterval);
-                customProgressText.textContent = "加载失败";
-                customLoadingTip.textContent = "错误: " + message;
-                customProgressBar.style.background = "linear-gradient(90deg, #f44336, #e91e63)";
                 alert(message);
               });
             };

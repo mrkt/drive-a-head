@@ -1,34 +1,15 @@
 // 虚拟摇杆控制 - 真正的圆形摇杆
 (function() {
-  // 检测移动设备或触摸屏
   var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  var hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  // 添加调试信息
-  console.log('Virtual Joystick - Device Detection:');
-  console.log('  User Agent:', navigator.userAgent);
-  console.log('  Is Mobile:', isMobile);
-  console.log('  Has Touch:', hasTouch);
-  console.log('  Force Show (add ?joystick=1 to URL):', window.location.search.includes('joystick=1'));
-
-  // 如果不是移动设备且没有触摸屏，并且没有强制显示参数，则退出
-  if (!isMobile && !hasTouch && !window.location.search.includes('joystick=1')) {
-    console.log('Virtual Joystick - Skipped (not a mobile/touch device)');
-    return;
-  }
-
-  console.log('Virtual Joystick - Initializing...');
+  if (!isMobile) return;
 
   // 等待 Unity canvas 加载
   function initJoystick() {
     var canvas = document.querySelector("#unity-canvas");
     if (!canvas) {
-      console.log('Virtual Joystick - Waiting for Unity canvas...');
       setTimeout(initJoystick, 100);
       return;
     }
-
-    console.log('Virtual Joystick - Unity canvas found, creating joystick...');
 
     // 创建摇杆 HTML 结构
     var joystickHTML = `
@@ -39,30 +20,17 @@
     `;
 
     document.body.insertAdjacentHTML('beforeend', joystickHTML);
-    console.log('Virtual Joystick - HTML structure inserted');
 
     var joystick = document.getElementById('virtual-joystick');
     var joystickStick = document.getElementById('joystick-stick');
     var joystickBase = document.getElementById('joystick-base');
 
     if (!joystick || !joystickStick || !joystickBase) {
-      console.error('Virtual joystick elements not found after insertion!');
-      console.error('  joystick:', joystick);
-      console.error('  joystickStick:', joystickStick);
-      console.error('  joystickBase:', joystickBase);
+      console.error('Virtual joystick elements not found');
       return;
     }
 
-    console.log('Virtual Joystick - Elements found, setting display...');
     joystick.style.display = 'block';
-
-    // 确保摇杆可见
-    var computedStyle = window.getComputedStyle(joystick);
-    console.log('Virtual Joystick - Display style:', computedStyle.display);
-    console.log('Virtual Joystick - Position:', computedStyle.position);
-    console.log('Virtual Joystick - Bottom:', computedStyle.bottom);
-    console.log('Virtual Joystick - Left:', computedStyle.left);
-    console.log('Virtual Joystick - Z-index:', computedStyle.zIndex);
 
     var currentInput = {
       horizontal: 0,  // -1.0 到 1.0
@@ -273,7 +241,6 @@
     });
 
     console.log('Virtual joystick initialized for mobile');
-    console.log('Virtual Joystick - Setup complete! Joystick should be visible at bottom-left corner.');
   }
 
   // DOM 加载完成后初始化
